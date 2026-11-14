@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto &amp; Binary Intelligence — Painel (scaffold)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #0f1115; color: #e6e6e6; }
+    header { background: #171a21; padding: 16px 24px; border-bottom: 1px solid #2a2f3a; }
+    h1 { margin: 0; font-size: 20px; }
+    .badge { display: inline-block; background: #b7791f; color: #111; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+    main { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .card { background: #171a21; border: 1px solid #2a2f3a; border-radius: 12px; padding: 16px; }
+    .card h2 { margin: 0 0 8px; font-size: 14px; color: #9aa3b2; text-transform: uppercase; letter-spacing: .04em; }
+    .card .value { font-size: 28px; font-weight: 700; }
+    .card .sub { font-size: 13px; color: #9aa3b2; }
+    .warn { background: #2a1f0d; border: 1px solid #b7791f; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .warn strong { color: #f6c453; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #2a2f3a; font-size: 14px; }
+    th { color: #9aa3b2; }
+    footer { text-align: center; color: #6b7280; font-size: 12px; padding: 24px; }
+    code { background: #23272f; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Crypto &amp; Binary Intelligence <span class="badge">SCAFFOLD</span></h1>
+  </header>
+  <main>
+    <div class="warn">
+      <strong>Painel placeholder.</strong> Este é o esqueleto do painel web
+      (especificação v4.1, Fase 14 — SIG-006). Nenhum dado real é exibido:
+      não há conectores, candles, sinais ou posições. O modo de execução é
+      <code>RESEARCH</code> e o <strong>LIVE está desabilitado por padrão</strong>.
+    </div>
+
+    <div class="grid">
+      <div class="card"><h2>Exchanges conectadas</h2><div class="value">0 / 7</div><div class="sub">primeiro grupo (Fase 4)</div></div>
+      <div class="card"><h2>Sinais ativos</h2><div class="value">—</div><div class="sub">Signal Engine (Fase 14)</div></div>
+      <div class="card"><h2>Posições abertas</h2><div class="value">0</div><div class="sub">execução bloqueada no scaffold</div></div>
+      <div class="card"><h2>Modo de execução</h2><div class="value">RESEARCH</div><div class="sub">LIVE: desabilitado</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Exchanges — primeiro grupo (§3)</h2>
+      <table>
+        <thead><tr><th>Exchange</th><th>Status</th><th>Conector</th></tr></thead>
+        <tbody>
+          <tr><td>Binance</td><td>scaffold</td><td>Fase 4 — CEX-001</td></tr>
+          <tr><td>Bybit</td><td>scaffold</td><td>Fase 4 — CEX-002</td></tr>
+          <tr><td>OKX</td><td>scaffold</td><td>Fase 4 — CEX-003</td></tr>
+          <tr><td>Coinbase Advanced</td><td>scaffold</td><td>Fase 5 — CEX-007</td></tr>
+          <tr><td>Kraken</td><td>scaffold</td><td>Fase 5 — CEX-008</td></tr>
+          <tr><td>Bitget</td><td>scaffold</td><td>Fase 5 — CEX-009</td></tr>
+          <tr><td>Gate.io</td><td>scaffold</td><td>Fase 5 — CEX-010</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>API (esqueleto)</h2>
+      <p class="sub">Health: <code>GET /health</code> · Exchanges: <code>GET /v1/exchanges</code> · Sistema: <code>GET /v1/system/health</code></p>
+      <p class="sub">Documentação interativa da API: <a href="http://localhost:8000/docs" style="color:#7cc4ff">http://localhost:8000/docs</a></p>
+    </div>
+  </main>
+  <footer>Crypto &amp; Binary Intelligence — scaffold v0.1.0 · especificação v4.1 (13/11/2026)</footer>
+</body>
+</html>

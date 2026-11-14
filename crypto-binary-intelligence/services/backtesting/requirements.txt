@@ -1,0 +1,7 @@
+# Backtesting — Fase 12
+# vectorbt é usado como backend independente de verificação cruzada
+# (ver vectorbt_adapter.py); o motor canônico é próprio (engine.py)
+# e só precisa de NumPy/pandas, já presentes no stack do projeto.
+numpy>=1.26
+pandas>=2.0
+vectorbt>=1.2

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480">
+<rect width="640" height="480" fill="#f3f6f9"/>
+<g transform="translate(130 92)">
+  <path d="M64 170c0-83 63-145 153-145 88 0 150 63 150 147v45H64z" fill="#d9e3ed" stroke="#8ca0b5" stroke-width="8"/>
+  <path d="M75 180h290v57H75z" fill="#263b52"/>
+  <path d="M220 94c45 0 79 21 95 58H183c4-35 17-58 37-58z" fill="#a9c5df" opacity=".8"/>
+  <path d="M354 170h93v95H354z" fill="#d8e4ef" stroke="#8ca0b5" stroke-width="7"/>
+  <path d="M64 219h303" stroke="#8ca0b5" stroke-width="8"/>
+</g>
+<text x="320" y="425" font-family="Arial,sans-serif" font-size="19" fill="#61758b" text-anchor="middle">Foto indisponível no momento</text>
+</svg>

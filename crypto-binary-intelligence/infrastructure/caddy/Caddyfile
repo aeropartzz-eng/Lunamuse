@@ -1,0 +1,87 @@
+# =============================================================================
+# Caddyfile — Reverse proxy (Fase 1, INF-004)
+# =============================================================================
+# PROPÓSITO
+#   Expor a API e o painel do Crypto & Binary Intelligence via HTTPS com
+#   TLS automático (Let's Encrypt), sem expor as portas internas do
+#   docker-compose (que ficam em 127.0.0.1).
+#
+# DOMÍNIOS (variáveis — preencher no .env; ver infrastructure/caddy/README.md)
+#   {$DOMAIN}        -> painel web (dashboard, porta 3000)
+#   api.{$DOMAIN}   -> API FastAPI (porta 8000)
+#
+# PRÉ-REQUISITOS
+#   - DNS apontando os dois hosts para o IP da VPS (A/AAAA).
+#   - Portas 80 e 443 liberadas no firewall (scripts/firewall.sh).
+#   - Serviço `caddy` no docker-compose.yml (ainda não adicionado — entra
+#     quando houver domínio; ver README.md).
+#   - Rate limit: a diretiva `rate_limit` abaixo exige o plugin
+#     caddy-rate-limit (imagem construída com xcaddy). Sem o plugin, o
+#     Caddy recusa a config — nesse caso, remova o bloco `rate_limit`
+#     e o rate limiting passa a ser feito na API (Fase 2+).
+#
+# NENHUM segredo neste arquivo: domínio e e-mail vêm de variáveis de
+# ambiente ({$DOMAIN}, {$ACME_EMAIL}).
+# =============================================================================
+
+{
+	# E-mail para avisos de expiração/renovação do Let's Encrypt.
+	email {$ACME_EMAIL}
+	# Logs de acesso em JSON (úteis para auditoria; sem dados sensíveis).
+	log {
+		output stdout
+		format json
+	}
+}
+
+# --- Painel web (dashboard) -------------------------------------------------
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy dashboard:3000
+
+	header {
+		# Segurança: sem sniffing, sem clickjacking, sem referrer vazado.
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# HSTS: só HTTPS pelos próximos 6 meses (inclui subdomínios).
+		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		# Remove o header de servidor (não vazar versão).
+		-Server
+	}
+}
+
+# --- API --------------------------------------------------------------------
+api.{$DOMAIN} {
+	encode gzip
+
+	# Rate limit básico: 60 requisições/minuto por IP (rajada de 10).
+	# REQUER o plugin caddy-rate-limit — ver README.md.
+	rate_limit {
+		zone api_limit {
+			key {http.request.remote.host}
+			events 60
+			window 1m
+		}
+	}
+
+	reverse_proxy api:8000
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		-Server
+		# A API não é embutida em iframe de terceiros.
+		Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+	}
+
+	# Health check sem rate limit (o monitoramento interno usa esta rota).
+	@health path /health
+	handle @health {
+		reverse_proxy api:8000
+	}
+}

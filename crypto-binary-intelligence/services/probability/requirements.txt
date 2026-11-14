@@ -1,0 +1,9 @@
+# Probability Engine / ML — Fase 13
+# scikit-learn já faz parte do stack do projeto (§8).
+# XGBoost e LightGBM são opcionais: se não instalarem, os modelos
+# correspondentes ficam indisponíveis e o pipeline documenta isso —
+# nenhum resultado deles é inventado.
+numpy>=1.26
+scikit-learn>=1.5
+xgboost>=2.0
+lightgbm>=4.0

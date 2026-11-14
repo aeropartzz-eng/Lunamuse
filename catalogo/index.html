@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#062d63">
+  <meta name="description" content="Explore os capacetes AeroPartz em uma experiência interativa 3D.">
+  <title>Capacetes em 3D | AeroPartz Auto e Motos</title>
+  <link rel="preconnect" href="https://aeropartz.com.br">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.128.0/three.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="AeroPartz Auto e Motos - início">
+        <img class="brand-logo" src="https://aeropartz.com.br/brand/aeropartz/logo-horizontal.webp" alt="AeroPartz Auto e Motos" onerror="this.style.display='none';document.getElementById('brandFallback').hidden=false">
+        <span id="brandFallback" class="brand-fallback" hidden>AeroPartz <small>Auto e Motos</small></span>
+        <span class="brand-location">Fortaleza · CE</span>
+      </a>
+      <a class="header-whatsapp" href="https://wa.me/5585992333378" target="_blank" rel="noopener"><span aria-hidden="true">◉</span> WhatsApp</a>
+    </div>
+  </header>
+
+  <main id="top" class="page-shell">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">AEROPARTZ AUTO E MOTOS</p>
+        <h1 id="page-title">Escolha. Gire. Explore.</h1>
+        <p class="intro-copy">Toque em um modelo para abrir o capacete em 3D e observar todos os ângulos.</p>
+      </div>
+      <div class="stock-note"><span class="stock-dot"></span> Cores e tamanhos disponíveis na loja</div>
+    </section>
+
+    <section class="filters" aria-label="Filtros do catálogo">
+      <div class="filter-block">
+        <div class="filter-heading">
+          <h2>Filtrar por numeração</h2>
+          <button id="clearSize" class="clear-filter" type="button" hidden>Limpar</button>
+        </div>
+        <div id="sizeFilters" class="size-filters" role="group" aria-label="Numeração">
+          <button class="size-filter" type="button" data-size="56" aria-pressed="false">56</button>
+          <button class="size-filter" type="button" data-size="58" aria-pressed="false">58</button>
+          <button class="size-filter" type="button" data-size="60" aria-pressed="false">60</button>
+          <button class="size-filter" type="button" data-size="62" aria-pressed="false">62</button>
+        </div>
+      </div>
+      <div class="filter-block model-filter-block">
+        <h2>Filtrar por modelo</h2>
+        <div id="modelFilters" class="model-filters" role="group" aria-label="Modelo">
+          <button class="model-filter is-active" type="button" data-model="all" aria-pressed="true">Todos</button>
+          <button class="model-filter" type="button" data-model="atomic-elite" aria-pressed="false">Atomic Elite</button>
+          <button class="model-filter" type="button" data-model="atomic-solid" aria-pressed="false">Atomic Solid</button>
+          <button class="model-filter" type="button" data-model="r8" aria-pressed="false">R8</button>
+          <button class="model-filter" type="button" data-model="liberty-3-elite" aria-pressed="false">Liberty 3 Elite</button>
+          <button class="model-filter" type="button" data-model="liberty-4" aria-pressed="false">Liberty 4</button>
+          <button class="model-filter" type="button" data-model="788" aria-pressed="false">788</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="catalog-section" aria-live="polite">
+      <div class="catalog-heading">
+        <div><h2>Vitrine AeroPartz</h2><p>Toque na foto ou no nome para explorar em 3D.</p></div>
+        <span id="resultCount" class="result-count">6 modelos</span>
+      </div>
+      <div id="productGrid" class="product-grid"></div>
+      <div id="emptyState" class="empty-state" hidden>
+        <strong>Nenhum modelo encontrado.</strong>
+        <span>Tente outra numeração ou limpe os filtros.</span>
+        <button id="resetFilters" class="button button-primary" type="button">Limpar filtros</button>
+      </div>
+    </section>
+
+    <section class="delivery-card" aria-labelledby="delivery-title">
+      <div class="delivery-icon" aria-hidden="true">⌖</div>
+      <div>
+        <h2 id="delivery-title">Retirada e entrega</h2>
+        <p><strong>Retirada:</strong> Rua do Congresso, 371 — Aerolândia, Fortaleza/CE. Combine o horário pelo WhatsApp.</p>
+        <p><strong>Entrega:</strong> Uber Flash, solicitado e pago pelo comprador.</p>
+      </div>
+      <a class="button button-outline" href="https://wa.me/5585992333378?text=Ol%C3%A1!%20Quero%20combinar%20a%20retirada%20ou%20entrega." target="_blank" rel="noopener">Combinar retirada</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <strong>AeroPartz Auto e Motos</strong><span>Fortaleza/CE</span>
+      <small>Catálogo informativo. A confirmação do pedido e da disponibilidade é feita pelo atendimento. Não há carrinho nem pagamento online neste catálogo.</small>
+    </div>
+  </footer>
+
+  <section id="viewerModal" class="viewer-modal" aria-hidden="true" aria-label="Visualizador 3D do capacete">
+    <div class="viewer-shell">
+      <div class="viewer-topbar">
+        <div class="viewer-brand-row">
+          <img src="https://aeropartz.com.br/brand/aeropartz/logo-horizontal.webp" alt="AeroPartz" class="viewer-logo">
+          <div><p class="viewer-kicker">EXPERIÊNCIA 3D</p><h2 id="viewerTitle">Capacete em 3D</h2><p id="viewerNote" class="viewer-note">Gire e explore todos os ângulos.</p></div>
+        </div>
+        <button id="closeViewer" class="viewer-close" type="button" aria-label="Fechar visualizador">×</button>
+      </div>
+
+      <div class="viewer-stage">
+        <div id="viewerCanvasHost" class="viewer-canvas-host"></div>
+        <div id="viewerLoading" class="viewer-loading">Preparando o capacete 3D…</div>
+        <div id="viewerDemoNote" class="viewer-demo-note" hidden>MODELO DEMONSTRATIVO · aguardando GLB oficial</div>
+        <div id="viewerViews" class="viewer-views" aria-label="Ângulos de visualização">
+          <button type="button" data-camera-view="frente" class="is-active" aria-pressed="true">Frente</button>
+          <button type="button" data-camera-view="traseira" aria-pressed="false">Trás</button>
+          <button type="button" data-camera-view="lateral" aria-pressed="false">Lado</button>
+          <button type="button" data-camera-view="cima" aria-pressed="false">Cima</button>
+          <button type="button" data-camera-view="baixo" aria-pressed="false">Baixo</button>
+          <button type="button" data-camera-view="interior" aria-pressed="false">Interior</button>
+        </div>
+        <div class="viewer-gesture-hint">Arraste para girar · pinça para aproximar</div>
+      </div>
+
+      <div class="viewer-panel">
+        <div class="viewer-product-line"><strong id="viewerPrice">R$ 159,99</strong><span id="viewerColorName">Cor selecionada</span></div>
+        <div class="viewer-options-grid">
+          <div class="viewer-option-block"><span class="viewer-option-label">Escolha a cor</span><div id="viewerColorOptions" class="viewer-color-options"></div></div>
+          <div class="viewer-option-block"><span class="viewer-option-label">Numeração em estoque</span><div id="viewerSizeOptions" class="viewer-size-options"></div><p id="viewerSizeHint" class="viewer-size-hint">Selecione o tamanho para liberar o WhatsApp.</p></div>
+        </div>
+        <div class="viewer-photos">
+          <span class="viewer-option-label">Fotos do capacete</span>
+          <div class="gallery-wrap">
+            <div class="gallery-viewport">
+              <div id="viewerGalleryTrack" class="gallery-track"></div>
+            </div>
+            <button id="viewerPhotoPrev" class="gallery-arrow prev" type="button" aria-label="Foto anterior">‹</button>
+            <button id="viewerPhotoNext" class="gallery-arrow next" type="button" aria-label="Próxima foto">›</button>
+          </div>
+          <div id="viewerGalleryDots" class="gallery-dots"></div>
+          <p class="zoom-hint">Toque na foto para ampliar · arraste para ver as outras</p>
+        </div>
+        <div class="viewer-actions">
+          <a id="viewerSiteLink" class="button button-outline" href="https://aeropartz.com.br" target="_blank" rel="noopener">Comprar no site ↗</a>
+          <a id="viewerWhatsapp" class="button button-whatsapp is-disabled" href="#viewerSizeOptions" aria-disabled="true">Chamar no WhatsApp</a>
+        </div>
+        <button id="viewerCloseBottom" class="viewer-back" type="button">← Voltar ao catálogo</button>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

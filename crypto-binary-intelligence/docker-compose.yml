@@ -1,0 +1,188 @@
+# =============================================================================
+# Crypto & Binary Intelligence — docker-compose.yml
+# =============================================================================
+# ESQUELETO / SCAFFOLD do MVP (especificação v4.1, 13/11/2026).
+# Serviços centrais apenas. NENHUMA credencial está neste arquivo: todas as
+# senhas e chaves vêm de variáveis de ambiente definidas no .env
+# (ver .env.example). Sem o .env, os serviços de dados não sobem.
+#
+# Serviços futuros do documento (Fases 3–15) — cex-connectors,
+# dex-connectors, market-normalizer, candle-builder, indicator-engine,
+# pattern-engine, orderflow-engine, regime-engine, strategy-engine,
+# probability-engine, risk-engine, execution-engine, order-manager,
+# portfolio-manager, notification-worker, backup-worker, caddy,
+# api-gateway, websocket-gateway — entram aqui quando forem implementados.
+# O MVP começa com PostgreSQL/TimescaleDB, Redis, NATS, API e painel.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL + TimescaleDB — Camada 7 (armazenamento)
+  # Fase 2 (DB-001/DB-002). Hypertables de trades/candles entram nas migrações
+  # em infrastructure/database/.
+  # ---------------------------------------------------------------------------
+  postgres-timescale:
+    image: timescale/timescaledb:latest-pg16
+    container_name: cbi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-crypto_intelligence}
+      POSTGRES_USER: ${POSTGRES_USER:-cbi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD deve estar definida no .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cbi} -d ${POSTGRES_DB:-crypto_intelligence}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cbi-net
+
+  # ---------------------------------------------------------------------------
+  # Redis — Camada 7 (cache / estado quente)
+  # Fase 2 (DB-003). Senha obrigatória, conforme a especificação.
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: cbi-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD deve estar definida no .env}", "--maxmemory", "${REDIS_MAXMEMORY:-256mb}", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD deve estar definida no .env}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cbi-net
+
+  # ---------------------------------------------------------------------------
+  # NATS JetStream — Camada 7 (mensageria)
+  # Fase 2 (DB-004). Barramento entre conectores -> normalizador -> market
+  # data -> inteligência -> sinais -> notificações.
+  # ---------------------------------------------------------------------------
+  nats:
+    image: nats:2-alpine
+    container_name: cbi-nats
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
+    volumes:
+      - natsdata:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cbi-net
+
+  # ---------------------------------------------------------------------------
+  # API — FastAPI (apps/api). Esqueleto: health + stubs das rotas /v1/*.
+  # Nenhuma execução real de ordens neste scaffold.
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./apps/api
+    container_name: cbi-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-cbi}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD deve estar definida no .env}@postgres-timescale:5432/${POSTGRES_DB:-crypto_intelligence}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD deve estar definida no .env}@redis:6379/0
+      NATS_URL: nats://nats:4222
+      # TRAVA DE SEGURANÇA (especificação §10): o sistema nunca muda sozinho
+      # para LIVE. O modo de execução é lido do .env e o scaffold só aceita
+      # RESEARCH. Qualquer tentativa de LIVE é rejeitada na API.
+      EXECUTION_MODE: ${EXECUTION_MODE:-RESEARCH}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres-timescale:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cbi-net
+
+  # ---------------------------------------------------------------------------
+  # Dashboard — painel web (apps/dashboard). Página placeholder estática
+  # servida por nginx; o painel funcional é a Fase 14 (SIG-006).
+  # ---------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: ./apps/dashboard
+    container_name: cbi-dashboard
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
+    depends_on:
+      - api
+    networks:
+      - cbi-net
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — Camada 7 (observabilidade, §16)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cbi-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./infrastructure/docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    networks:
+      - cbi-net
+
+  # ---------------------------------------------------------------------------
+  # Grafana — Camada 7 (observabilidade, §16)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cbi-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD deve estar definida no .env}
+    ports:
+      - "127.0.0.1:3001:3000"
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      - prometheus
+    networks:
+      - cbi-net
+
+volumes:
+  pgdata:
+  redisdata:
+  natsdata:
+  promdata:
+  grafanadata:
+
+networks:
+  cbi-net:
+    driver: bridge

@@ -1,0 +1,145 @@
+# =============================================================================
+# Crypto & Binary Intelligence — NATS JetStream streams (Fase 2 — DB-004)
+# =============================================================================
+# Fluxo (§2): Fonte -> Conector -> Normalizador -> NATS -> Market Data ->
+# Indicadores -> Padrões/Order Flow -> Estratégia -> Probabilidade ->
+# Risk Engine -> Signal Engine -> Notificações -> (se autorizado) Execução.
+#
+# Aplicar na VPS (depois do `docker compose up -d nats`):
+#   nats stream add --config infrastructure/messaging/nats-streams.yaml
+# ou, sem o CLI, via `nats` CLI por stream (ver nats-streams.md).
+# Réplicas = 1: VPS única (§11). Quando houver cluster, subir para 3.
+# Nenhum subject carrega segredo: payloads levam apenas dados de mercado,
+# sinais e eventos — nunca chaves de API, tokens ou senhas.
+# =============================================================================
+
+streams:
+  # ---------------------------------------------------------------------------
+  # MARKET — dados de mercado brutos/normalizados (Camadas 2–3).
+  # Produtores: conectores CEX/DEX, normalizador, candle-builder.
+  # Consumidores: market-data, indicator-engine, pattern-engine,
+  # order-flow-engine, regime-engine, cross-exchange, scanner.
+  # Retenção curta: o histórico canônico é o TimescaleDB; o NATS é o
+  # barramento, não o arquivo. max_age 7 dias cobre replay de falhas.
+  # ---------------------------------------------------------------------------
+  - name: MARKET
+    description: "Trades, candles, order book, tickers, funding, OI, liquidacoes e eventos on-chain"
+    subjects:
+      - "market.trades.>"
+      - "market.candles.>"
+      - "market.orderbook.>"
+      - "market.tickers.>"
+      - "market.funding.>"
+      - "market.open_interest.>"
+      - "market.liquidations.>"
+      - "market.onchain.>"
+    retention: limits
+    discard: old
+    storage: file
+    num_replicas: 1
+    max_age: 168h
+    max_msgs: 10000000
+    max_bytes: 10737418240
+    duplicate_window: 2m
+    allow_rollup_hdrs: false
+    deny_delete: false
+    deny_purge: false
+
+  # ---------------------------------------------------------------------------
+  # SIGNALS — sinais e predições (Camadas 4–6, §§9 e 14).
+  # Produtores: strategy-engine, probability-engine.
+  # Consumidores: risk-engine, signal-engine, notifier, painel/API.
+  # Retenção longa: sinais são auditáveis e o painel pode precisar de
+  # replay; o registro canônico continua no Postgres (strategy_signals).
+  # ---------------------------------------------------------------------------
+  - name: SIGNALS
+    description: "Sinais aprovados/publicados, predicoes de modelo e invalidacoes"
+    subjects:
+      - "signals.new.>"
+      - "signals.approved.>"
+      - "signals.published.>"
+      - "signals.closed.>"
+      - "signals.invalidated.>"
+      - "signals.expired.>"
+      - "predictions.>"
+    retention: limits
+    discard: old
+    storage: file
+    num_replicas: 1
+    max_age: 2160h
+    max_msgs: 1000000
+    max_bytes: 2147483648
+    duplicate_window: 2m
+    allow_rollup_hdrs: false
+    deny_delete: false
+    deny_purge: false
+
+  # ---------------------------------------------------------------------------
+  # EXECUTION — ordens, fills, posições e risco (Camada 5, §10).
+  # Produtores: execution-engine, order-manager, risk-engine, portfolio.
+  # Consumidores: portfolio-manager, reconciliation-worker, API/painel,
+  # audit. Retenção longa (90 dias) para reconciliação e auditoria; o
+  # registro canônico é o Postgres (execution_orders/fills/positions).
+  # ---------------------------------------------------------------------------
+  - name: EXECUTION
+    description: "Ordens, fills, posicoes, eventos de risco e reconciliacao"
+    subjects:
+      - "execution.orders.>"
+      - "execution.fills.>"
+      - "execution.positions.>"
+      - "execution.reconciliation.>"
+      - "risk.events.>"
+      - "risk.kill_switch.>"
+    retention: limits
+    discard: old
+    storage: file
+    num_replicas: 1
+    max_age: 2160h
+    max_msgs: 1000000
+    max_bytes: 2147483648
+    duplicate_window: 2m
+    allow_rollup_hdrs: false
+    deny_delete: false
+    deny_purge: false
+
+  # ---------------------------------------------------------------------------
+  # SYSTEM — saúde, conexões e auditoria operacional (§§5, 16).
+  # Produtores: todos os serviços (heartbeat, connection-manager).
+  # Consumidores: monitoramento, API /v1/system/health, alertas.
+  # Retenção curta: eventos operacionais de rotina; a auditoria canônica
+  # é audit_logs/system_events no Postgres.
+  # ---------------------------------------------------------------------------
+  - name: SYSTEM
+    description: "Heartbeats, status de conexoes, alertas e eventos do sistema"
+    subjects:
+      - "system.heartbeat.>"
+      - "system.health.>"
+      - "system.connection.>"
+      - "system.alerts.>"
+      - "system.events.>"
+    retention: limits
+    discard: old
+    storage: file
+    num_replicas: 1
+    max_age: 720h
+    max_msgs: 1000000
+    max_bytes: 1073741824
+    duplicate_window: 2m
+    allow_rollup_hdrs: false
+    deny_delete: false
+    deny_purge: false
+
+# ---------------------------------------------------------------------------
+# Consumidores — política padrão (aplicar por serviço na implementação).
+# ack_policy: explicit — o consumidor confirma após persistir/processar;
+# sem ack, a mensagem é reentregue (nunca perder um sinal ou fill por
+# falha transitória). ack_wait: 30s. max_deliver: 5, depois vai para
+# dead-letter (subject *.dlq do mesmo stream, a criar por serviço).
+# deliver_policy: all para replays de boot; new para consumo contínuo.
+# ---------------------------------------------------------------------------
+consumer_defaults:
+  ack_policy: explicit
+  ack_wait: 30s
+  max_deliver: 5
+  deliver_policy: all
+  replay_policy: instant

@@ -1,0 +1,12 @@
+Adicione aqui os arquivos GLB oficiais, um por modelo:
+
+- atomic-elite.glb
+- atomic-solid.glb
+- r8.glb
+- liberty-3-elite.glb
+- liberty-4.glb
+- sport-moto-788.glb
+
+Para permitir a visualização interna, cada GLB deve conter a parte externa e interna do capacete, incluindo forro, almofadas, cintas e fecho.
+Separe os materiais do casco, viseira, forro e acabamentos. Nomeie o casco como CASCO ou SHELL para habilitar a troca de cor.
+Oriente a frente para +Z, o topo para +Y e centralize a origem do modelo.

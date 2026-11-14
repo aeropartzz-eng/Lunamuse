@@ -1,0 +1,16 @@
+{
+  "models": [
+    "lightgbm",
+    "logistic_regression",
+    "random_forest",
+    "xgboost"
+  ],
+  "weights": [
+    0.0006719861073869201,
+    0.2532121212042981,
+    0.7362873627658895,
+    0.009828529922425546
+  ],
+  "brier_val": 0.24974628652219866,
+  "brier_val_equal_weights": 0.26292275703475754
+}

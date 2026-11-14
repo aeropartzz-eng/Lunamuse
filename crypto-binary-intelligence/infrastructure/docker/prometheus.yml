@@ -1,0 +1,20 @@
+# Prometheus — scrape de métricas (§16). Esqueleto: alvos dos serviços
+# centrais; os exporters dos serviços entram nas fases correspondentes.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "cbi-api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]
+    # O endpoint /metrics da API entra na Fase 2 (observabilidade).
+
+  - job_name: "nats"
+    static_configs:
+      - targets: ["nats:8222"]
